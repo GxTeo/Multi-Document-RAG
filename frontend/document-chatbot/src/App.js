@@ -1,21 +1,16 @@
-import React, { useState, useEffect } from 'react';
+// src/App.js
+import React, { useState } from 'react';
 import './App.css';
 import FileUpload from './components/FileUpload';
 import Chatbot from './components/Chatbot';
 
 function App() {
-  const [collections, setCollections] = useState(() => {
-    const savedCollections = localStorage.getItem('collections');
-    return savedCollections ? JSON.parse(savedCollections) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('collections', JSON.stringify(collections));
-  }, [collections]);
+  const [collections, setCollections] = useState([]);
 
   const handleNewCollection = (collectionName) => {
     setCollections([...collections, collectionName]);
   };
+
   return (
     <div className="App">
       <div className="left">
