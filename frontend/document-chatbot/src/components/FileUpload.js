@@ -1,11 +1,31 @@
+// src/components/FileUpload.js
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import axios from 'axios';
+import config from '../config';
 import './FileUpload.css';
 
-const FileUpload = () => {
+const FileUpload = ({ onNewCollection }) => {
   const [files, setFiles] = useState([]);
   const [collectionName, setCollectionName] = useState('');
   const [isNamePromptVisible, setIsNamePromptVisible] = useState(false);
+
+  const sendFilesToBackend = async () => {
+    const formData = new FormData();
+    formData.append('collection_name', collectionName);
+    files.forEach((file) => formData.append('files', file));
+
+    const response = await axios.post(`${config.apiUrl}/upload_files`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.status !== 200) {
+      alert('Failed to upload files');
+      throw new Error('Failed to upload files');
+    }
+  };
 
   const onDrop = (acceptedFiles) => {
     setFiles([...files, ...acceptedFiles]);
@@ -23,17 +43,20 @@ const FileUpload = () => {
     }
   };
 
-  const handleConfirmName = () => {
-    // Regular expression to allow only alphanumeric characters and underscores
-    const regex = /^[a-zA-Z0-9_]+$/;
-  
-    if (!regex.test(collectionName)) {
-      alert('Collection name can only contain alphanumeric characters and underscores.');
+  const handleConfirmName = async () => {
+    if (collectionName.trim() === '') {
+      alert('Please provide a name for the file collection.');
     } else {
-      // Proceed with submitting the file collection with the provided name
-      setIsNamePromptVisible(false);
-      setCollectionName('');
-      setFiles([]);
+      try {
+        await sendFilesToBackend();
+        onNewCollection(collectionName);
+        setIsNamePromptVisible(false);
+        setCollectionName('');
+        setFiles([]);
+      } catch (error) {
+        console.error('Error uploading files:', error);
+        alert('There was an error uploading the files. Please try again.');
+      }
     }
   };
 
