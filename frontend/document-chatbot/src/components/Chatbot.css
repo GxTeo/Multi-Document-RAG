@@ -70,3 +70,125 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+.openai-key-container {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .input-with-button {
+    display: flex;
+    align-items: center;
+  }
+  
+  .input-field {
+    width: calc(100% - 120px); /* Adjust the width as needed */
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  
+  .submit-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .submit-button:hover {
+    background-color: #0056b3;
+  }
+
+  .reveal-button {
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: #777;
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  
+  .reveal-button:hover {
+    color: #333;
+  }
+
+  .collection-dropdown {
+    margin-bottom: 20px;
+  }
+  
+  .collection-dropdown select {
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    font-size: 16px;
+    background-color: #fff;
+    appearance: none;
+    cursor: pointer;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .collection-dropdown select:focus {
+    border-color: #007BFF;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  }
+  
+  .collection-dropdown select option {
+    padding: 10px;
+    background-color: #fff;
+  }
+
+  .collection-dropdown select {
+    position: relative;
+    padding-right: 30px; /* Adjust padding to accommodate the custom arrow */
+  }
+  
+  .collection-dropdown select::after {
+    content: '▼';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .message {
+    display: flex;
+    margin: 5px 0;
+  }
+  
+  .user {
+    justify-content: flex-end;
+  }
+  
+  .bot {
+    justify-content: flex-start;
+  }
+  
+  .user-message, .bot-message {
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 60%;
+    color: #ffffff;
+    border: 1px solid #444;  /* Add a border to both messages */
+    text-align: justify; /* Justify the text */
+    word-wrap: break-word; /* Ensure long words break correctly */
+  }
+  
+  .user-message {
+    background-color: #4caf50;
+    align-self: flex-end;
+  }
+  
+  .bot-message {
+    background-color: #333333;
+    align-self: flex-start;
+    border-color: #007BFF;  /* Make the border more visible for bot messages */
+  }
+  
