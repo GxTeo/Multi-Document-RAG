@@ -1,43 +1,42 @@
 // src/components/FileUpload.js
 import React, { useState } from 'react';
+import { useDropzone } from 'react-dropzone';
 import './FileUpload.css';
 
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
 
-  const handleFileUpload = (event) => {
-    const uploadedFiles = Array.from(event.target.files);
-    setFiles(uploadedFiles);
+  const onDrop = (acceptedFiles) => {
+    setFiles([...files, ...acceptedFiles]);
   };
 
+  const handleRemoveFile = (index) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+
   return (
-    <div className="file-upload">
-      <h2>Upload Files</h2>
-      <div className="upload-container">
-        <input
-          type="file"
-          multiple
-          id="fileInput"
-          className="file-input"
-          onChange={handleFileUpload}
-        />
-        <label htmlFor="fileInput" className="file-label">
-          Select Files
-        </label>
-      </div>
-      <div className="file-info">
-        {files.length > 0 ? (
-          <p>{files.length} file(s) selected</p>
-        ) : (
-          <p>No files selected</p>
-        )}
+    <div className="file-upload-container">
+      <div {...getRootProps({ className: 'dropzone' })}>
+        <input {...getInputProps()} />
+        <div className="upload-icon">📂</div>
+        <p>Click to upload or drag and drop</p>
+        <p className="file-types">PDF and DOCX </p>
+        <p className="file-count">{files.length} file(s) selected</p>
       </div>
       {files.length > 0 && (
         <div className="file-list">
           <ul>
             {files.map((file, index) => (
-              <li key={index} title={file.name}>
-                {file.name}
+              <li key={index} title={file.name} className="file-item">
+                <span className="file-name">{file.name}</span>
+                <button
+                  className="remove-file-button"
+                  onClick={() => handleRemoveFile(index)}
+                >
+                  &times;
+                </button>
               </li>
             ))}
           </ul>
