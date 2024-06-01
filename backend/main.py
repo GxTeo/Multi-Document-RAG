@@ -58,7 +58,7 @@ async def validate_openai_key(api_key: ApiKey):
     try:
         client.models.list()
         # Set the API key in environment variable
-        os.environ["OPENAI_API_KEY"] =  os.getenv('OPENAI_API_KEY')
+        os.environ["OPENAI_API_KEY"] =  api_key.api_key
         return {"detail": "API key is valid"}, 200
     except openai.AuthenticationError as e:
         print('Error message:', e)
