@@ -1,10 +1,8 @@
-// src/components/Chatbot.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import config from '../config'; // Import your config file
 import './Chatbot.css';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Import eye icons from react-icons library
-import { FaCheckCircle } from 'react-icons/fa'; // Import check circle icon from react-icons library
+import { FaEye, FaEyeSlash, FaCheckCircle } from 'react-icons/fa';
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
@@ -13,36 +11,78 @@ const Chatbot = () => {
   const [apiKeyValid, setApiKeyValid] = useState(false);
   const [isKeyRevealed, setIsKeyRevealed] = useState(false);
   const [showAsterisks, setShowAsterisks] = useState(true);
+  const [selectedCollection, setSelectedCollection] = useState('');
+  const [collections, setCollections] = useState([]);
+  const [isGeneratingIndex, setIsGeneratingIndex] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
 
-
-
-  const validateApiKey = async (key) => {
+  const validateApiKey = async () => {
     try {
       const response = await axios.post(`${config.apiUrl}/validate_openai_key`, { api_key: openaiKey });
       if (response.status === 200) {
         setApiKeyValid(true);
         alert('Valid API key! You can now send messages to the chatbot.');
-        // localStorage.setItem('openaiKey', key); // Store valid API key in local storage
       }
     } catch (error) {
-      if (error.response.status === 400) {
-        setApiKeyValid(false);
-        alert('Invalid API key! Please enter a valid API key.');
-      }
-      else {
-        setApiKeyValid(false);
-        alert('Invalid API key! Please enter a valid API key.');
-      }
+      setApiKeyValid(false);
+      alert('Invalid API key! Please enter a valid API key.');
     }
   };
 
-  const handleSendMessage = () => {
-    if (input.trim() !== '' && apiKeyValid) {
-      // Send message
-    } else {
-      console.error('Invalid API key or empty message');
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        const response = await axios.get(`${config.apiUrl}/get_collections`);
+        if (response.data.status === 200) {
+          setCollections(response.data.collections);
+        }
+        else if (response.status === 500) {
+          alert('Failed to conenct to MongoDB. Please check.');
+          setCollections([]);
+        }
+      } catch (error) {
+        alert('Failed to fetch collections. Please try again.');
+        setCollections([]);
+      }
+    };
+
+    fetchCollections();
+  }, []);
+
+
+  const handleSendMessage = async () => {
+    if (input.trim() === '') return;
+    
+    const userMessage = { text: input, sender: 'user' };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('message', input);
+      const response = await axios.post(`${config.apiUrl}/chat_with_agent`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        },
+        timeout: 60000
+    }); 
+    
+      if (response.status === 200) {
+        const botMessage = { text: response.data[0].response, sender: 'bot' };
+       
+        setMessages((prev) => [...prev, botMessage]);
+      }
+    } catch (error) {
+      // console.error("Error while chatting with the agent:", error);
+      const errorMessage = { text: 'Error: Unable to get response from the bot.', sender: 'bot' };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
     }
   };
+
 
   const handleInputChange = (event) => {
     setInput(event.target.value);
@@ -71,12 +111,49 @@ const Chatbot = () => {
     setIsKeyRevealed((prev) => !prev);
   };
 
+  const handleCollectionChange = (event) => {
+    setSelectedCollection(event.target.value);
+  };
+
+  const handleGenerateIndex = async () => {
+    if (selectedCollection === '') {
+      alert('Please select a collection first.');
+      return;
+    }
+    setIsGeneratingIndex(true);
+    try {
+      const formData = new FormData();
+      formData.append('collection_name', selectedCollection)
+      const response = await axios.post(`${config.apiUrl}/generate_index`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        timeout: 60000
+      });
+      if (response.status === 200) {
+        setIsGeneratingIndex(false);
+        alert('Index generated successfully!');
+      }
+    } catch (error) {
+      if (error.response) {
+        const errorMessage = error.response.data.detail;
+        alert(`Error: ${errorMessage}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        alert('Error: No response received from the server.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        alert(`Error: ${error.message}`);
+      }
+    }
+  };
+
   return (
     <div>
       <div className="openai-key-container">
         <div className="input-with-button">
           <input
-            type={showAsterisks ? 'password' : 'text'} // Toggle input type based on showAsterisks state
+            type={showAsterisks ? 'password' : 'text'}
             value={openaiKey}
             onChange={handleOpenaiKeyChange}
             placeholder="Enter your OpenAI key..."
@@ -84,16 +161,35 @@ const Chatbot = () => {
             required
           />
           <button onClick={handleToggleKeyVisibility} className="reveal-button">
-            {isKeyRevealed ? (showAsterisks ? <FaEyeSlash /> : <FaEye />) : <FaEye />} {/* Toggle eye icon based on key visibility */}
+            {isKeyRevealed ? (showAsterisks ? <FaEyeSlash /> : <FaEye />) : <FaEye />}
           </button>
           <button onClick={handleSubmitKey} className="submit-button">Submit</button>
-          {apiKeyValid && <FaCheckCircle className="check-icon" />} {/* Display check icon if API key is valid */}
-
+          {apiKeyValid && <FaCheckCircle className="check-icon" />}
         </div>
       </div>
       <div className="chatbot-container">
+        <div className="collection-dropdown">
+          <select value={selectedCollection} onChange={handleCollectionChange}>
+            <option value="">Select a collection</option>
+            {collections.map((collection, index) => (
+              <option key={index} value={collection}>{collection}</option>
+            ))}
+          </select>
+          <button onClick={handleGenerateIndex} className="generate-button" disabled={isGeneratingIndex}>
+            {isGeneratingIndex ? 'Generating...' : 'Generate Index'}
+          </button>
+        </div>
         <div className="chat-window">
-          {/* Chat messages */}
+          {messages.map((message, index) => (
+            <div key={index} className={`message ${message.sender}`}>
+              {message.sender === 'user' ? (
+                <div className="user-message">{message.text}</div>
+              ) : (
+                <div className="bot-message">{message.text}</div>
+              )}
+            </div>
+          ))}
+          {loading && <div className="message bot"><div className="bot-message">...</div></div>}
         </div>
         <div className="input-container">
           <input
