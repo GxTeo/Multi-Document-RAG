@@ -1,6 +1,6 @@
 import re 
 
-from PyPDF2 import PdfFileReader
+from PyPDF2 import PdfReader
 from docx import Document as DocxDocument
 from io import BytesIO
 
@@ -10,8 +10,8 @@ def extract_text(filename: str, content: bytes):
     '''
     data = BytesIO(content)
     if filename.endswith('.pdf'):
-        pdf = PdfFileReader(data)
-        text = ' '.join(page.extractText() for page in pdf.pages)
+        pdf = PdfReader(data)
+        text = ' '.join(page.extract_text() for page in pdf.pages)
     elif filename.endswith('.docx'):
         docx_doc = DocxDocument(data)
         text = ' '.join(paragraph.text for paragraph in docx_doc.paragraphs)
