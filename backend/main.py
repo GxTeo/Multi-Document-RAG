@@ -32,15 +32,10 @@ class ApiKey(BaseModel):
     api_key: str
 
 
-remote_database = chromadb.HttpClient(host='localhost', port=8000, ssl=False)
+remote_database = chromadb.HttpClient()
 mongo_client = MongoClient('mongodb://localhost:27017/')
 mongo_reader = SimpleMongoReader(host='localhost', port=27017)
 
-try:
-    mongo_client.server_info()
-    print("Connected to the mongo database")
-except Exception as e:
-    print("Unable to connect to the mongo database")
 
 # Endpoint to test the connection to the backend
 @app.get('/', response_class=HTMLResponse)
@@ -76,8 +71,7 @@ async def validate_openai_key(api_key: ApiKey):
 async def get_collections():
     try:
         collections = mongo_client['Documents'].list_collection_names()
-        # print('Collections:', collections)
-        return {"collections": collections}, 200
+        return {"collections": collections, 'status': 200}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to retrieve collections name")
 
@@ -119,32 +113,54 @@ async def generate_index(collection_name: str = Form(...)):
     from index import QueryEngineTools
     import chromadb
     from llama_index.embeddings.openai import OpenAIEmbedding
+    from llama_index.core.agent import ReActAgent
+    from llama_index.llms.openai import OpenAI
+    from llama_index.core.memory import ChatMemoryBuffer
+    from llama_index.core import Settings
 
-    global query_engine_tools
+    global agent_instruct
     # Test the connection to the mongo database
     try:
         mongo_client.server_info()
     except Exception as e:
+        print("Unable to connect to the mongo database")
         raise HTTPException(status_code=500, detail="Unable to connect to the mongo database")
     
     # Test the connection to the chroma database
     try:
-        remote_database.get_collections()
+        remote_database.list_collections()
     except Exception as e:
+        print("Unable to connect to the chroma database")
         raise HTTPException(status_code=500, detail="Unable to connect to the chroma database")
 
     try:
         embed_model = OpenAIEmbedding(model="text-embedding-3-small", embed_batch_size=256)
     except Exception as e:
+        print("Unable to connect to the OpenAI API")
         raise HTTPException(status_code=500, detail="Unable to connect to the OpenAI API")
 
     query_engine_tools = QueryEngineTools(collection_name=collection_name, embed_model=embed_model, mongo_reader=mongo_reader, mongo_client=mongo_client, chroma_client=remote_database, db_name='Documents', top_k=3).get_query_engine_tools()
+    memory = ChatMemoryBuffer.from_defaults(token_limit=3000,)
     
+    llm = OpenAI(model="gpt-4")
+    Settings.llm = llm
+    agent_instruct = ReActAgent.from_tools(
+    query_engine_tools, llm=llm, verbose=True,
+    memory=memory,
+    )
     return {"detail": "Index generated successfully"}, 200
 
 @app.post("/chat_with_agent")
-async def chat_with_agent(question: str = Form(...)):
-    pass
+async def chat_with_agent(message: str = Form(...)):
+
+    try:
+        response = agent_instruct.chat(message)
+        print(str(response))
+        return {"response": str(response)}, 200
+    
+    except Exception as e:
+        print(f"Unable to chat with the agent. Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Unable to chat with the agent. Error: {e}")
 
 
 
