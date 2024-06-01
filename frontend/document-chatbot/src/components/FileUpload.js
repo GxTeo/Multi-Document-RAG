@@ -1,10 +1,11 @@
-// src/components/FileUpload.js
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import './FileUpload.css';
 
 const FileUpload = () => {
   const [files, setFiles] = useState([]);
+  const [collectionName, setCollectionName] = useState('');
+  const [isNamePromptVisible, setIsNamePromptVisible] = useState(false);
 
   const onDrop = (acceptedFiles) => {
     setFiles([...files, ...acceptedFiles]);
@@ -12,6 +13,28 @@ const FileUpload = () => {
 
   const handleRemoveFile = (index) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = () => {
+    if (files.length === 0) {
+      alert('Please select at least one file.');
+    } else {
+      setIsNamePromptVisible(true);
+    }
+  };
+
+  const handleConfirmName = () => {
+    // Regular expression to allow only alphanumeric characters and underscores
+    const regex = /^[a-zA-Z0-9_]+$/;
+  
+    if (!regex.test(collectionName)) {
+      alert('Collection name can only contain alphanumeric characters and underscores.');
+    } else {
+      // Proceed with submitting the file collection with the provided name
+      setIsNamePromptVisible(false);
+      setCollectionName('');
+      setFiles([]);
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
@@ -40,6 +63,19 @@ const FileUpload = () => {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      <button onClick={handleSubmit} className="submit-button">Submit</button>
+      {isNamePromptVisible && (
+        <div className="name-prompt">
+          <input
+            type="text"
+            value={collectionName}
+            onChange={(e) => setCollectionName(e.target.value)}
+            placeholder="Enter collection name..."
+            className="name-input"
+          />
+          <button onClick={handleConfirmName} className="confirm-button">Confirm</button>
         </div>
       )}
     </div>
