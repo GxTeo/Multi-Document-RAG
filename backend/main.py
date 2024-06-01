@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -24,6 +25,8 @@ async def validate_openai_key(api_key: ApiKey):
     client = OpenAI(api_key=api_key.api_key)
     try:
         client.models.list()
+        # Set the API key in environment variable
+        os.environ["OPENAI_API_KEY"] =  os.getenv('OPENAI_API_KEY')
         return {"detail": "API key is valid"}, 200
     except openai.AuthenticationError as e:
         print('Error message:', e)
@@ -31,4 +34,6 @@ async def validate_openai_key(api_key: ApiKey):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+
 
