@@ -46,11 +46,13 @@ class QueryEngineTools:
                 doc, storage_context=storage_context
             )
             query_engine = index.as_query_engine(response_mode="tree_summarize", similarity_top_k=self.top_k)
-
+            
+            modify_filename = re.sub(r'\W+', '', filename)
+            tool_name = modify_filename
             tool = QueryEngineTool(
                 query_engine=query_engine,
                 metadata=ToolMetadata(
-                    name=filename,
+                    name=tool_name,
                     description=f"Query engine for {filename}"
                                  "Use a detailed plain text question as input to the tool",
                 ),
