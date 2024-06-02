@@ -5,7 +5,7 @@ import axios from 'axios';
 import config from '../config';
 import './FileUpload.css';
 
-const FileUpload = () => {
+const FileUpload = ({ fetchCollections }) => {
   const [files, setFiles] = useState([]);
   const [collectionName, setCollectionName] = useState('');
   const [isNamePromptVisible, setIsNamePromptVisible] = useState(false);
@@ -26,6 +26,7 @@ const FileUpload = () => {
   
       if (response.status === 200) {
         alert('Files uploaded successfully');
+        fetchCollections();
       } else {
         alert('Failed to upload files');
         throw new Error('Failed to upload files');
@@ -59,9 +60,12 @@ const FileUpload = () => {
     if (files.length === 0) {
       alert('Please select at least one file.');
     } else {
-    
       setIsNamePromptVisible(true);
     }
+  };
+
+  const handleCancel = () => {
+    setIsNamePromptVisible(false);
   };
 
   const handleConfirmName = async () => {
@@ -108,7 +112,9 @@ const FileUpload = () => {
           </ul>
         </div>
       )}
-      <button onClick={handleSubmit} className="submit-button">Submit</button>
+      {!isNamePromptVisible && (
+        <button onClick={handleSubmit} className="submit-button">Submit</button>
+      )}      
       {isNamePromptVisible && (
         <div className="name-prompt">
           <input
@@ -118,9 +124,13 @@ const FileUpload = () => {
             placeholder="Enter collection name..."
             className="name-input"
           />
-          <button onClick={handleConfirmName} className="confirm-button">Confirm</button>
-        </div>
+          <div className="button-group">
+            <button onClick={handleConfirmName} className="confirm-button">Confirm</button>
+            <button onClick={handleCancel} className="cancel-button">Cancel</button>
+          </div>
+      </div>
       )}
+      
     </div>
   );
 };
