@@ -32,11 +32,16 @@ app.add_middleware(
 class ApiKey(BaseModel):
     api_key: str
 
-
+# Chat History 
 class MessageRole(str, Enum):
     USER = 'user'
     SYSTEM = 'system'
     ASSISTANT = 'assistant'
+
+# Past Chat Messages 
+class Messages(BaseModel):
+    text: str
+    sender: str
 
 remote_database = chromadb.HttpClient()
 mongo_client = MongoClient('mongodb://localhost:27017/')
@@ -130,14 +135,35 @@ async def upload_files(collection_name: str = Form(...), files: List[UploadFile]
     
     return {"detail": "Files uploaded successfully"}, 200
 
+@app.get('/display_collections')
+async def display_collections():
+    try:
+        collections = mongo_client['Documents'].list_collection_names()
+        collection_dict = {}
+        for collection in collections:
+            # Extract  the filename for each document in the collection
+            collection_list = []
+            for file in mongo_client['Documents'][collection].find():
+                if 'filename' in file:
+                    collection_list.append(file['filename'])
+            
+            # Add the collection to the dictionary if it has documents
+            if len(collection_list) > 0:
+                collection_dict[collection] = collection_list
+        return collection_dict
+    except Exception as e:
+        print(f"Unable to retrieve the collections. Error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to retrieve the collections")
+
 @app.delete('/delete_collection')
 async def delete_collection(collection_name: str = Query(...)):
     try:
         for file in mongo_client['Documents'][collection_name].find():
-            if modify_string(file['filename']) in remote_database.list_collections():
+            # Check if file has filename attributes in the mongo collection
+            if 'filename' in file and modify_string(file['filename']) in remote_database.list_collections():
                 remote_database.delete_collection(modify_string(file['filename']))
             else:
-                print(f"Collection {modify_string(file['filename'])} does not exist in the chroma database")
+                pass
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to remove the collection from the chroma database")
         
@@ -190,6 +216,33 @@ async def generate_index(collection_name: str = Form(...)):
 
     query_engine_tools_dict[collection_name] = query_engine_tools
     return {"detail": "Index generated successfully"}, 200
+
+@app.get("/get_chat_history", response_model=List[Messages])
+async def get_chat_history(collection_name: str = Query(...)):
+    if not collection_name:
+        raise HTTPException(status_code=400, detail="Collection name is required")
+
+    try:
+        collection = mongo_client['Documents'][collection_name]
+        chat_history = collection['chat_history']
+        chat_history = chat_history.find()
+        chat_history_list = []
+        for chat in chat_history:
+            user_message = Messages(text=chat['message']['content'], sender=chat['message']['role'])
+            chat_history_list.append(user_message)
+
+            # Append assistant response
+            assistant_response = Messages(text=chat['response']['content'], sender=chat['response']['role'])
+            chat_history_list.append(assistant_response)
+        
+        return chat_history_list
+    
+    except Exception as e:
+        print(f"Unable to retrieve the chat history from the mongo database. Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Unable to retrieve the chat history from the mongo database.")
+
+
+
 
 @app.post("/chat_with_agent")
 async def chat_with_agent(message: str = Form(...), collection_name: str = Form(...)):
