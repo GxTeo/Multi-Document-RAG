@@ -1,0 +1,62 @@
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+    width: 200px; /* Set the fixed width */
+  }
+  
+  .dropdown-toggle {
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+    cursor: pointer;
+    width: 100%; /* Make button width the same as dropdown */
+    text-align: left; /* Align text to the left */
+  }
+  
+  .dropdown-toggle:hover {
+    background-color: #444;
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    width: 100%; /* Ensure dropdown menu matches the width of the toggle button */
+  }
+  
+  .dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    color: #fff;
+    cursor: pointer;
+    width: 100%; /* Ensure items match the width of the dropdown */
+    box-sizing: border-box;
+  }
+  
+  .dropdown-item:hover {
+    background-color: #444;
+  }
+  
+  .delete-button {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 2px 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-left: 10px; /* Add margin to separate it from the text */
+  }
+  
+  .delete-button:hover {
+    background-color: darkred;
+  }
