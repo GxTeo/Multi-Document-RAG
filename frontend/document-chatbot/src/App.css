@@ -1,7 +1,6 @@
-/* src/App.css */
 .App {
   display: flex;
-  height: 100vh;
+  min-height: 100vh; /* Changed from height to min-height */
   background-color: #121212;
   color: #cfcfcf;
 }
@@ -9,13 +8,13 @@
 .left {
   flex: 1;
   display: flex;
-  flex-direction: column; /* Align children vertically */
-  justify-content: flex-start; /* Align items to the top */
-  align-items: center; /* Center items horizontally */
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
   border-right: 1px solid #ccc;
   background-color: #1e1e1e;
-  padding: 20px; /* Add padding for better spacing */
-  overflow-y: auto; /* Adds scrolling if items exceed the height */
+  padding: 20px;
+  overflow-y: auto;
 }
 
 .right {
