@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import config from '../config'; // Import your config file
 import './Chatbot.css';
+import CustomDropdown from './CustomDropdown'; 
+
 import { FaEye, FaEyeSlash, FaCheckCircle } from 'react-icons/fa';
 
 const Chatbot = () => {
@@ -147,6 +149,32 @@ const Chatbot = () => {
       }
     }
   };
+  
+  const handleDeleteCollection = async (collection) => {
+    if (collection === '') {
+        alert('Please select a collection first.');
+        return;
+    }
+      try {
+        const response = await axios.delete(`${config.apiUrl}/delete_collection`, {
+          params: {
+            collection_name: collection
+          },
+          timeout: 3000
+        });
+        if (response.status === 200) {
+            alert('Collection deleted successfully!');
+            setCollections(collections.filter(c => c !== collection));
+            setSelectedCollection('');
+        }
+    } catch (error) {
+        if (error.response) {
+          alert(`Error: ${error.response.data.detail}`);
+        } else {
+        alert('Failed to delete collection. Please try again.');
+      }
+    }
+};
 
   return (
     <div>
@@ -169,16 +197,16 @@ const Chatbot = () => {
       </div>
       <div className="chatbot-container">
         <div className="collection-dropdown">
-          <select value={selectedCollection} onChange={handleCollectionChange}>
-            <option value="">Select a collection</option>
-            {collections.map((collection, index) => (
-              <option key={index} value={collection}>{collection}</option>
-            ))}
-          </select>
-          <button onClick={handleGenerateIndex} className="generate-button" disabled={isGeneratingIndex}>
-            {isGeneratingIndex ? 'Generating...' : 'Generate Index'}
-          </button>
-        </div>
+            <CustomDropdown
+              collections={collections}
+              selectedCollection={selectedCollection}
+              onSelect={setSelectedCollection}
+              onDelete={handleDeleteCollection}
+            />
+            <button onClick={handleGenerateIndex} className="generate-button" disabled={isGeneratingIndex}>
+              {isGeneratingIndex ? 'Generating...' : 'Generate Index'}
+            </button>
+          </div>
         <div className="chat-window">
           {messages.map((message, index) => (
             <div key={index} className={`message ${message.sender}`}>
