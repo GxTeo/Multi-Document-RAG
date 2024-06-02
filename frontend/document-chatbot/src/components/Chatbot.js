@@ -3,10 +3,12 @@ import axios from 'axios';
 import config from '../config'; // Import your config file
 import './Chatbot.css';
 import CustomDropdown from './CustomDropdown'; 
+import ReactMarkdown from 'react-markdown';
+
 
 import { FaEye, FaEyeSlash, FaCheckCircle } from 'react-icons/fa';
 
-const Chatbot = ({ setFetchCollections }) => {
+function Chatbot({ setFetchCollections, handleFetchCollections }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
@@ -16,6 +18,8 @@ const Chatbot = ({ setFetchCollections }) => {
   const [selectedCollection, setSelectedCollection] = useState('');
   const [collections, setCollections] = useState([]);
   const [isGeneratingIndex, setIsGeneratingIndex] = useState(false);
+  const [indexedCollections, setIndexedCollections] = useState({});
+
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
@@ -27,6 +31,15 @@ const Chatbot = ({ setFetchCollections }) => {
     fetchCollections();
     setFetchCollections(fetchCollections);
   }, []);
+
+  useEffect(() => {
+    if (selectedCollection) {
+        fetchChatHistory(selectedCollection);
+    }
+    else if (selectedCollection === '') {
+        setMessages([]);
+    }
+}, [selectedCollection]);
 
   const eraseApiKey = () => {
     localStorage.removeItem('openaiKey'); // Remove the key from local storage
@@ -52,8 +65,15 @@ const Chatbot = ({ setFetchCollections }) => {
   const fetchCollections = async () => {
     try {
       const response = await axios.get(`${config.apiUrl}/get_collections`);
-      if (response.data.status === 200) {
-        setCollections(response.data.collections);
+      if (response.status === 200) {
+        const { indexed_collections, non_indexed_collections } = response.data;
+        setCollections([...indexed_collections, ...non_indexed_collections]);
+        setIndexedCollections(
+          indexed_collections.reduce((acc, collection) => {
+            acc[collection] = true;
+            return acc;
+          }, {})
+        );
       } else if (response.status === 500) {
         alert('Failed to connect to MongoDB. Please check.');
         setCollections([]);
@@ -69,9 +89,24 @@ const Chatbot = ({ setFetchCollections }) => {
     setFetchCollections(fetchCollections);
   }, []);
 
+
+  const fetchChatHistory = async (collectionName) => {
+    try {
+        const response = await axios.get(`${config.apiUrl}/get_chat_history?collection_name=${collectionName}`);
+        setMessages(response.data);
+    } catch (error) {
+        console.error("Failed to fetch chat history:", error);
+        setMessages([]);
+    }
+};
+
   const handleSendMessage = async () => {
-    if (input.trim() === '') return;
-    
+    if (input.trim() === '' || selectedCollection === '') {
+      if (selectedCollection === '') {
+        alert('Please select a collection before sending a message.');
+      }
+      return;
+    }    
     const userMessage = { text: input, sender: 'user' };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -80,6 +115,7 @@ const Chatbot = ({ setFetchCollections }) => {
     try {
       const formData = new FormData();
       formData.append('message', input);
+      formData.append('collection_name', selectedCollection);
       const response = await axios.post(`${config.apiUrl}/chat_with_agent`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
@@ -129,10 +165,6 @@ const Chatbot = ({ setFetchCollections }) => {
     setIsKeyRevealed((prev) => !prev);
   };
 
-  const handleCollectionChange = (event) => {
-    setSelectedCollection(event.target.value);
-  };
-
   const handleGenerateIndex = async () => {
     if (selectedCollection === '') {
       alert('Please select a collection first.');
@@ -150,6 +182,7 @@ const Chatbot = ({ setFetchCollections }) => {
       });
       if (response.status === 200) {
         setIsGeneratingIndex(false);
+        setIndexedCollections(prev => ({ ...prev, [selectedCollection]: true }));
         alert('Index generated successfully!');
       }
     } catch (error) {
@@ -181,6 +214,7 @@ const Chatbot = ({ setFetchCollections }) => {
         if (response.status === 200) {
             alert('Collection deleted successfully!');
             setCollections(collections.filter(c => c !== collection));
+            handleFetchCollections();
             setSelectedCollection('');
         }
     } catch (error) {
@@ -215,8 +249,11 @@ const Chatbot = ({ setFetchCollections }) => {
       </div>
       <div className="chatbot-container">
         <div className="collection-dropdown">
-          <CustomDropdown
-            collections={collections}
+        <CustomDropdown
+            collections={collections.map(collection => ({
+              name: collection,
+              isIndexed: !!indexedCollections[collection]
+            }))}
             selectedCollection={selectedCollection}
             onSelect={setSelectedCollection}
             onDelete={handleDeleteCollection}
@@ -233,9 +270,13 @@ const Chatbot = ({ setFetchCollections }) => {
           {messages.map((message, index) => (
             <div key={index} className={`message ${message.sender}`}>
               {message.sender === 'user' ? (
-                <div className="user-message">{message.text}</div>
+                <div className="user-message">
+                  <ReactMarkdown>{message.text}</ReactMarkdown>
+                </div>
               ) : (
-                <div className="bot-message">{message.text}</div>
+                <div className="bot-message">
+                  <ReactMarkdown>{message.text}</ReactMarkdown>
+                </div>              
               )}
             </div>
           ))}
@@ -248,12 +289,12 @@ const Chatbot = ({ setFetchCollections }) => {
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            disabled={!apiKeyValid}  // Disable input when API key is invalid
+            disabled={!apiKeyValid || isGeneratingIndex}  // Disable input when API key is invalid
           />
           <button 
             onClick={handleSendMessage} 
             className="button send-button"
-            disabled={!apiKeyValid}  // Conditionally disable the send button
+            disabled={!apiKeyValid || isGeneratingIndex}  // Conditionally disable the send button
           >
             Send
           </button>
