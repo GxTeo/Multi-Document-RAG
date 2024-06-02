@@ -106,6 +106,21 @@ async def upload_files(collection_name: str = Form(...), files: List[UploadFile]
     
     return {"detail": "Files uploaded successfully"}, 200
 
+@app.get('/remove_collection')
+async def remove_collection(collection_name: str = Form(...)):
+    try:
+        for file in mongo_client['Documents'][collection_name].find():
+            remote_database.delete_collection(modify_string(file['filename']))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Unable to remove the collection from the chroma database")
+        
+    try:
+        mongo_client['Documents'].drop_collection(collection_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Unable to remove the collection from MongoDB")
+    
+    return {"detail": "Collection removed successfully"}, 200
+
 
 @app.post("/generate_index")
 async def generate_index(collection_name: str = Form(...)):
