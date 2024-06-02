@@ -18,8 +18,7 @@ from fastapi.responses import HTMLResponse
 from utils import *
 
 app = FastAPI()
-origins = ["*",
-           "http://localhost:3000"]
+origins = ["http://localhost:3000"]
 
 app.add_middleware(
     CORSMiddleware,
