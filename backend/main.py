@@ -171,6 +171,11 @@ async def delete_collection(collection_name: str = Query(...)):
         mongo_client['Documents'].drop_collection(collection_name)
         metadata_collection = mongo_client['Documents']['metadata']
         metadata_collection.delete_one({'collection_name': collection_name})
+
+        # Drop the chat history for the collection
+        chat_history_collection = mongo_client['Documents'][collection_name]['chat_history']
+        chat_history_collection.drop()
+
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to remove the collection from MongoDB")
     
@@ -281,7 +286,16 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
         print(f"Unable to retrieve the chat history from the mongo database. Error: {e}")
         raise HTTPException(status_code=500, detail=f"Unable to retrieve the chat history from the mongo database. Error: {e}")
 
-    query_engine_tools = query_engine_tools_dict[collection_name]
+    try:
+        if query_engine_tools_dict:
+            query_engine_tools = query_engine_tools_dict[collection_name]
+        else:
+            print('Query engine tools dict not defined')
+            raise HTTPException(status_code=400, detail="The collection has not been indexed. Please generate the index first.")
+    except KeyError:
+        print('KeyError: The collection has not been indexed. Please generate the index first.')
+        raise HTTPException(status_code=400, detail="The collection has not been indexed. Please generate the index first.")
+    
     llm = OpenAI(model="gpt-3.5-turbo")
     Settings.llm = llm
 
