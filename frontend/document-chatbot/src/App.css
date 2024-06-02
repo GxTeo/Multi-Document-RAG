@@ -9,15 +9,20 @@
 .left {
   flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column; /* Align children vertically */
+  justify-content: flex-start; /* Align items to the top */
+  align-items: center; /* Center items horizontally */
   border-right: 1px solid #ccc;
   background-color: #1e1e1e;
+  padding: 20px; /* Add padding for better spacing */
+  overflow-y: auto; /* Adds scrolling if items exceed the height */
 }
 
 .right {
   flex: 2;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
+  padding: 20px;
 }
