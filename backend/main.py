@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from llama_index.readers.mongodb import SimpleMongoReader
 
 # FastAPI 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
@@ -106,8 +106,8 @@ async def upload_files(collection_name: str = Form(...), files: List[UploadFile]
     
     return {"detail": "Files uploaded successfully"}, 200
 
-@app.get('/remove_collection')
-async def remove_collection(collection_name: str = Form(...)):
+@app.delete('/delete_collection')
+async def delete_collection(collection_name: str = Query(...)):
     try:
         for file in mongo_client['Documents'][collection_name].find():
             remote_database.delete_collection(modify_string(file['filename']))
