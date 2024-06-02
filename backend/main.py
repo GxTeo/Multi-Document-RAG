@@ -43,9 +43,9 @@ class Messages(BaseModel):
     text: str
     sender: str
 
-remote_database = chromadb.HttpClient()
-mongo_client = MongoClient('mongodb://localhost:27017/')
-mongo_reader = SimpleMongoReader(host='localhost', port=27017)
+remote_database = chromadb.HttpClient(host='chroma', port=8000)
+mongo_client = MongoClient('mongodb://mongodb:27017/')
+mongo_reader = SimpleMongoReader(host='mongodb', port=27017)
 query_engine_tools_dict = {}
 
 # Endpoint to test the connection to the backend
