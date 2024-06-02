@@ -69,3 +69,11 @@ Here is a screenshot of the application:
 
 ![Application](./assets/sample.jpg)
 
+
+## Future Work
+
+In the future, I plan to extend the capabilities of this application in the following ways:
+
+- **Leverage Open Source Large Language Models (LLMs)**: I plan to incorporate more open-source LLMs to avoid reliance of OpenAI models and to provide more flexibility in terms of the models that can be used. I also wish that the application can be brought completely offline to avoid privacy issues
+
+- **Support for More File Types**: Currently, the application supports text documents. In the future, i plan to extend the support to other file types, such as JSON, TXT files. This will allow the application to retrieve information from a wider range of sources.
