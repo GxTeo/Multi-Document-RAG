@@ -1,6 +1,7 @@
 import os
 from typing import List
 from pydantic import BaseModel
+from enum import Enum
 
 # Database 
 import chromadb
@@ -32,10 +33,15 @@ class ApiKey(BaseModel):
     api_key: str
 
 
+class MessageRole(str, Enum):
+    USER = 'user'
+    SYSTEM = 'system'
+    ASSISTANT = 'assistant'
+
 remote_database = chromadb.HttpClient()
 mongo_client = MongoClient('mongodb://localhost:27017/')
 mongo_reader = SimpleMongoReader(host='localhost', port=27017)
-
+query_engine_tools_dict = {}
 
 # Endpoint to test the connection to the backend
 @app.get('/', response_class=HTMLResponse)
@@ -71,7 +77,21 @@ async def validate_openai_key(api_key: ApiKey):
 async def get_collections():
     try:
         collections = mongo_client['Documents'].list_collection_names()
-        return {"collections": collections, 'status': 200}
+
+        # I want to split the collections into two groups: indexed and non-indexed
+        indexed_collections = []
+        non_indexed_collections = []
+
+        for collection in collections:
+            metadata_collection = mongo_client['Documents']['metadata']
+            metadata = metadata_collection.find_one({'collection_name': collection})
+            if metadata:
+                if metadata['indexed'] and collection != 'metadata':
+                    indexed_collections.append(collection)
+                elif not metadata['indexed'] and collection != 'metadata':
+                    non_indexed_collections.append(collection)
+
+        return {"indexed_collections": indexed_collections, "non_indexed_collections": non_indexed_collections, 'status': 200}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to retrieve collections name")
 
@@ -97,6 +117,10 @@ async def upload_files(collection_name: str = Form(...), files: List[UploadFile]
     documents_database = mongo_client['Documents']
     documents_collection = documents_database[collection_name]
 
+    # Set Indexed to False for the collection
+    metadata_collection = documents_database['metadata']
+    metadata_collection.update_one({'collection_name': collection_name}, {"$set": {"indexed": False}}, upsert=True)
+
     for file in files:
         filename = file.filename
         file_content = await file.read()
@@ -119,8 +143,16 @@ async def delete_collection(collection_name: str = Query(...)):
         
     try:
         mongo_client['Documents'].drop_collection(collection_name)
+        metadata_collection = mongo_client['Documents']['metadata']
+        metadata_collection.delete_one({'collection_name': collection_name})
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to remove the collection from MongoDB")
+    
+    try:
+        if collection_name in query_engine_tools_dict:
+            query_engine_tools_dict.pop(collection_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Unable to remove the collection from the query engine tools dictionary")
     
     return {"detail": "Collection removed successfully"}, 200
 
@@ -129,14 +161,8 @@ async def delete_collection(collection_name: str = Query(...)):
 async def generate_index(collection_name: str = Form(...)):
     # lazy import
     from index import QueryEngineTools
-    import chromadb
     from llama_index.embeddings.openai import OpenAIEmbedding
-    from llama_index.core.agent import ReActAgent
-    from llama_index.llms.openai import OpenAI
-    from llama_index.core.memory import ChatMemoryBuffer
-    from llama_index.core import Settings
-
-    global agent_instruct
+    
     # Test the connection to the mongo database
     try:
         mongo_client.server_info()
@@ -158,22 +184,77 @@ async def generate_index(collection_name: str = Form(...)):
         raise HTTPException(status_code=500, detail="Unable to connect to the OpenAI API")
 
     query_engine_tools = QueryEngineTools(collection_name=collection_name, embed_model=embed_model, mongo_reader=mongo_reader, mongo_client=mongo_client, chroma_client=remote_database, db_name='Documents', top_k=3).get_query_engine_tools()
-    memory = ChatMemoryBuffer.from_defaults(token_limit=3000,)
-    
-    llm = OpenAI(model="gpt-4")
-    Settings.llm = llm
-    agent_instruct = ReActAgent.from_tools(
-    query_engine_tools, llm=llm, verbose=True,
-    memory=memory,
-    )
+    # If the collection has been indexed, set a boolean flag to True in MongoDB
+    metadata_collection = mongo_client['Documents']['metadata']
+    metadata_collection.update_one({'collection_name': collection_name}, {"$set": {"indexed": True}}, upsert=True)
+
+    query_engine_tools_dict[collection_name] = query_engine_tools
     return {"detail": "Index generated successfully"}, 200
 
 @app.post("/chat_with_agent")
-async def chat_with_agent(message: str = Form(...)):
+async def chat_with_agent(message: str = Form(...), collection_name: str = Form(...)):
+    # lazy import
+    from llama_index.core.agent import ReActAgent
+    from llama_index.llms.openai import OpenAI
+    from llama_index.core.memory import ChatMemoryBuffer
+    from llama_index.core.base.llms.types import ChatMessage
+    from llama_index.core import Settings
+
+
+    # Retrieve any chat history from the mongo database for the collection if it exists
+    try:
+        collection = mongo_client['Documents'][collection_name]
+        chat_history = collection['chat_history']
+        chat_history = chat_history.find()
+        chat_history_list = []
+        for chat in chat_history:
+            user_message = ChatMessage(
+                role=MessageRole.USER,
+                content=chat['message']['content'],
+                additional_kwargs=chat['message'].get('additional_kwargs', {})
+            )
+            chat_history_list.append(user_message)
+
+            # Append assistant response
+            assistant_response = ChatMessage(
+                role=MessageRole.ASSISTANT,
+                content=chat['response']['content'],
+                additional_kwargs=chat['response'].get('additional_kwargs', {})
+            )
+            chat_history_list.append(assistant_response)
+
+
+    except Exception as e:
+        print(f"Unable to retrieve the chat history from the mongo database. Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Unable to retrieve the chat history from the mongo database. Error: {e}")
+
+    query_engine_tools = query_engine_tools_dict[collection_name]
+    llm = OpenAI(model="gpt-3.5-turbo")
+    Settings.llm = llm
+
+    print(f"Chat history: {chat_history_list}")
+    agent_instruct = ReActAgent.from_tools(query_engine_tools, llm=llm, verbose=True, chat_history=chat_history_list)
 
     try:
         response = agent_instruct.chat(message)
         print(str(response))
+        # Create ChatMessage instances
+        user_message = ChatMessage(role=MessageRole.USER, content=message)
+        assistant_response = ChatMessage(role=MessageRole.ASSISTANT, content=response.response)
+
+        try:
+            # Save the chat history into the mongo database for the collection
+            collection = mongo_client['Documents'][collection_name]
+            chat_history = collection['chat_history']
+            chat_history.insert_one({
+                'message': user_message.dict(),
+                'response': assistant_response.dict()
+            })
+
+        except Exception as e:
+            print(f"Unable to save the chat history into the mongo database. Error: {e}")
+            raise HTTPException(status_code=500, detail=f"Unable to save the chat history into the mongo database. Error: {e}")
+        
         return {"response": str(response)}, 200
     
     except Exception as e:
