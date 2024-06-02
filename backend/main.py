@@ -96,6 +96,7 @@ async def get_collections():
                 elif not metadata['indexed'] and collection != 'metadata':
                     non_indexed_collections.append(collection)
 
+        # Return the collections based on the indexed status
         return {"indexed_collections": indexed_collections, "non_indexed_collections": non_indexed_collections, 'status': 200}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to retrieve collections name")
@@ -155,6 +156,7 @@ async def display_collections():
         print(f"Unable to retrieve the collections. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to retrieve the collections")
 
+# Endpoint to delete a collection from the mongo database and the chroma database
 @app.delete('/delete_collection')
 async def delete_collection(collection_name: str = Query(...)):
     try:
@@ -296,6 +298,7 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
         print('KeyError: The collection has not been indexed. Please generate the index first.')
         raise HTTPException(status_code=400, detail="The collection has not been indexed. Please generate the index first.")
     
+    # Based on experience, gpt-4 is more suitable to behave as agent than gpt-3.5-turbo
     llm = OpenAI(model="gpt-3.5-turbo")
     Settings.llm = llm
 
