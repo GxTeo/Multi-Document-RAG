@@ -122,15 +122,14 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
         },
         timeout: 60000
     }); 
-    
       if (response.status === 200) {
         const botMessage = { text: response.data[0].response, sender: 'bot' };
-       
         setMessages((prev) => [...prev, botMessage]);
       }
     } catch (error) {
-      // console.error("Error while chatting with the agent:", error);
-      const errorMessage = { text: 'Error: Unable to get response from the bot.', sender: 'bot' };
+      
+      const error_response = error.response.data.detail;      
+      const errorMessage = { text: error_response, sender: 'bot' };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
