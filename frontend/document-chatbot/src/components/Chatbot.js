@@ -6,7 +6,7 @@ import CustomDropdown from './CustomDropdown';
 
 import { FaEye, FaEyeSlash, FaCheckCircle } from 'react-icons/fa';
 
-const Chatbot = () => {
+const Chatbot = ({ setFetchCollections }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
@@ -18,12 +18,29 @@ const Chatbot = () => {
   const [isGeneratingIndex, setIsGeneratingIndex] = useState(false);
   const [loading, setLoading] = useState(false);
   
+  useEffect(() => {
+    const storedKey = localStorage.getItem('openaiKey');
+    if (storedKey) {
+      // setOpenaiKey(storedKey);
+      setApiKeyValid(true);
+    }
+    fetchCollections();
+    setFetchCollections(fetchCollections);
+  }, []);
+
+  const eraseApiKey = () => {
+    localStorage.removeItem('openaiKey'); // Remove the key from local storage
+    setApiKeyValid(false);                // Reset validation state
+    setOpenaiKey('');                     // Clear the input field
+  };
 
   const validateApiKey = async () => {
     try {
       const response = await axios.post(`${config.apiUrl}/validate_openai_key`, { api_key: openaiKey });
       if (response.status === 200) {
         setApiKeyValid(true);
+        localStorage.setItem('openaiKey', openaiKey); // Store the key in local storage
+        setOpenaiKey(''); // Clear the input field
         alert('Valid API key! You can now send messages to the chatbot.');
       }
     } catch (error) {
@@ -32,26 +49,25 @@ const Chatbot = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchCollections = async () => {
-      try {
-        const response = await axios.get(`${config.apiUrl}/get_collections`);
-        if (response.data.status === 200) {
-          setCollections(response.data.collections);
-        }
-        else if (response.status === 500) {
-          alert('Failed to conenct to MongoDB. Please check.');
-          setCollections([]);
-        }
-      } catch (error) {
-        alert('Failed to fetch collections. Please try again.');
+  const fetchCollections = async () => {
+    try {
+      const response = await axios.get(`${config.apiUrl}/get_collections`);
+      if (response.data.status === 200) {
+        setCollections(response.data.collections);
+      } else if (response.status === 500) {
+        alert('Failed to connect to MongoDB. Please check.');
         setCollections([]);
       }
-    };
+    } catch (error) {
+      alert('Failed to fetch collections. Please try again.');
+      setCollections([]);
+    }
+  };
 
+  useEffect(() => {
     fetchCollections();
+    setFetchCollections(fetchCollections);
   }, []);
-
 
   const handleSendMessage = async () => {
     if (input.trim() === '') return;
@@ -189,24 +205,30 @@ const Chatbot = () => {
             required
           />
           <button onClick={handleToggleKeyVisibility} className="reveal-button">
-            {isKeyRevealed ? (showAsterisks ? <FaEyeSlash /> : <FaEye />) : <FaEye />}
+            {showAsterisks ? <FaEyeSlash /> : <FaEye />}
           </button>
           <button onClick={handleSubmitKey} className="submit-button">Submit</button>
+          <button onClick={eraseApiKey} className="erase-btn">Erase Key</button>
+
           {apiKeyValid && <FaCheckCircle className="check-icon" />}
         </div>
       </div>
       <div className="chatbot-container">
         <div className="collection-dropdown">
-            <CustomDropdown
-              collections={collections}
-              selectedCollection={selectedCollection}
-              onSelect={setSelectedCollection}
-              onDelete={handleDeleteCollection}
-            />
-            <button onClick={handleGenerateIndex} className="generate-button" disabled={isGeneratingIndex}>
-              {isGeneratingIndex ? 'Generating...' : 'Generate Index'}
-            </button>
-          </div>
+          <CustomDropdown
+            collections={collections}
+            selectedCollection={selectedCollection}
+            onSelect={setSelectedCollection}
+            onDelete={handleDeleteCollection}
+          />
+          <button 
+            onClick={handleGenerateIndex} 
+            className="button generate-button" 
+            disabled={!apiKeyValid || isGeneratingIndex}
+          >
+            {isGeneratingIndex ? 'Generating...' : 'Generate Index'}
+          </button>
+        </div>
         <div className="chat-window">
           {messages.map((message, index) => (
             <div key={index} className={`message ${message.sender}`}>
@@ -226,9 +248,15 @@ const Chatbot = () => {
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            style={{ width: '80%', padding: '10px', borderRadius: '8px' }}
+            disabled={!apiKeyValid}  // Disable input when API key is invalid
           />
-          <button onClick={handleSendMessage} className="send-button">Send</button>
+          <button 
+            onClick={handleSendMessage} 
+            className="button send-button"
+            disabled={!apiKeyValid}  // Conditionally disable the send button
+          >
+            Send
+          </button>
         </div>
       </div>
     </div>
