@@ -1,0 +1,54 @@
+.collections-container {
+    width: 100%;
+    max-width: 600px; /* Adequate maximum width for focus and readability */
+    margin: 20px auto;
+    background: #f8f9fa; /* Soft off-white background for a lighter feel */
+    color: #343a40; /* Dark gray for better readability and softer than pure black */
+    border-radius: 12px; /* Increased border radius for a more modern, rounded look */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05); /* Softer shadow for subtle depth */
+    overflow: hidden;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Modern and clean typography */
+}
+
+.collections-container h3 {
+    padding: 15px 20px;
+    margin: 0;
+    background-color: #17a2b8; /* Softer blue-green, less intense than the original blue */
+    color: #ffffff;
+    font-size: 18px; /* Slightly larger font for better visibility */
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    border-radius: 12px 12px 0 0; /* Rounded corners on the top */
+}
+
+.collections-container h3:hover {
+    background-color: #138496; /* Darker shade of the header color on hover */
+}
+
+.collections-container ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.collections-container li {
+    padding: 10px 20px;
+    border-bottom: 1px solid #dee2e6; /* Lighter gray for the separator */
+    transition: background-color 0.2s ease-in-out;
+}
+
+.collections-container li:hover {
+    background-color: #e9ecef; /* Light gray background on hover for interactivity */
+}
+
+.collections-container li:last-child {
+    border-bottom: none;
+}
+
+/* Enhancing visual feedback for interactive elements */
+.collections-container h3:active {
+    background-color: #117a8b; /* Even darker blue when the header is clicked */
+}
