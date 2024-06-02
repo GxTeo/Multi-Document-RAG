@@ -110,7 +110,10 @@ async def upload_files(collection_name: str = Form(...), files: List[UploadFile]
 async def delete_collection(collection_name: str = Query(...)):
     try:
         for file in mongo_client['Documents'][collection_name].find():
-            remote_database.delete_collection(modify_string(file['filename']))
+            if modify_string(file['filename']) in remote_database.list_collections():
+                remote_database.delete_collection(modify_string(file['filename']))
+            else:
+                print(f"Collection {modify_string(file['filename'])} does not exist in the chroma database")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to remove the collection from the chroma database")
         
