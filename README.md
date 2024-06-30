@@ -36,6 +36,7 @@ These instructions will get you a copy of the project up and running on your loc
 - Docker: You need to have Docker installed on your machine. You can download and install Docker from the [official website](https://www.docker.com/get-started).
 - Docker Compose: Docker Compose is included in the Docker Desktop installation for Windows and macOS. For Linux, you can follow the instructions on the [official documentation](https://docs.docker.com/compose/install/) to install it.
 - OpenAI API Key: You would need a OpenAI API key to be able to called the [OpenAI API endpoint](https://openai.com/index/openai-api/). I paid for one and its pretty cheap if you used the cheaper models like ```gpt-3.5-turbo```.
+- LlamaParse API Key: You would need a LlamaParse API Key to efficiently parse and represent the textual file. Free usage comes with page limit. Visit [official documentation](https://docs.cloud.llamaindex.ai/llamaparse/getting_started) for detailed documentation.
 
 ### Running the Application
 
@@ -76,8 +77,8 @@ In the future, I plan to extend the capabilities of this application in the foll
 
 - **Leverage Open Source Large Language Models (LLMs)**: I plan to incorporate more open-source LLMs to avoid reliance of OpenAI models and to provide more flexibility in terms of the models that can be used. I also wish that the application can be brought completely offline to avoid privacy issues
 
-- **Support for More File Types**: Currently, the application supports text documents. In the future, i plan to extend the support to other file types, such as JSON, TXT files. This will allow the application to retrieve information from a wider range of sources.
-
 - **Multi-User Authentication**: I plan to add multi-user authentication to the application. This will allow multiple users to use the application simultaneously while maintaining their individual settings and data.
+
+- **Change Vector Databases**: ChromaDB seems very unreliable, where we have methods breaking and poor documentation webpage. Maybe I would try FAISS or Redis in the near future.
 
 - **Deployment on Google Kubernetes Engine (GKE)**: I plan to deploy the application on GKE. This will allow the application to scale to handle multiple users and to take advantage of the robustness and reliability of GKE.
