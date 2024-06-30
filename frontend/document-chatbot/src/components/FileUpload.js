@@ -9,28 +9,35 @@ const FileUpload = ({ fetchCollections }) => {
   const [files, setFiles] = useState([]);
   const [collectionName, setCollectionName] = useState('');
   const [isNamePromptVisible, setIsNamePromptVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [completedUploads, setCompletedUploads] = useState(0);
 
-  const sendFilesToBackend = async (collectionName, files = []) => {
+
+  const sendFilesToBackend = async (collectionName, files = []) => {  
     try {
-      const formData = new FormData();
-      formData.append('collection_name', collectionName);
-      files.forEach((file) => formData.append('files', file));
-  
-      const response = await axios.post(`${config.apiUrl}/upload_files`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('collection_name', collectionName);
+        formData.append('files', file);
+    
+        const response = await axios.post(`${config.apiUrl}/upload_files`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 100000,
+        });
 
-        },
-        timeout: 5000,
-      });
-  
-      if (response.status === 200) {
-        alert('Files uploaded successfully');
-        fetchCollections();
-      } else {
-        alert('Failed to upload files');
-        throw new Error('Failed to upload files');
+        if (response.status === 200) {
+          setCompletedUploads(prevCount => prevCount + 1);
+        }
+        else if (response.status !== 200) {
+          alert('Failed to upload file: ' + file.name);
+          throw new Error('Failed to upload file: ' + file.name);
+        }
       }
+    
+      alert('Files uploaded successfully');
+      fetchCollections();
     } catch (error) {
       // Handle specific error responses from the backend
       if (error.response) {
@@ -45,8 +52,9 @@ const FileUpload = ({ fetchCollections }) => {
         alert('An unexpected error occurred.');
       }
       console.error('Error uploading files:', error);
-    }
   };
+  setCompletedUploads(0);
+};
 
   const onDrop = (acceptedFiles) => {
     setFiles([...files, ...acceptedFiles]);
@@ -73,13 +81,16 @@ const FileUpload = ({ fetchCollections }) => {
       alert('Please provide a name for the file collection.');
     } else {
       try {
+        setIsLoading(true);
         await sendFilesToBackend(collectionName, files);
         setIsNamePromptVisible(false);
         setCollectionName('');
         setFiles([]);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error uploading files:', error);
         alert('There was an error uploading the files. Please try again.');
+        setIsLoading(false);
       }
     }
   };
@@ -88,6 +99,12 @@ const FileUpload = ({ fetchCollections }) => {
 
   return (
     <div className="file-upload-container">
+      {isLoading && (
+        <div className="upload-status">
+          <p>Upload progress: {completedUploads} / {files.length}</p>
+          <div className="loading-icon"></div>
+        </div>
+      )}
       <div {...getRootProps({ className: 'dropzone' })}>
         <input {...getInputProps()} />
         <div className="upload-icon">📂</div>
@@ -128,9 +145,8 @@ const FileUpload = ({ fetchCollections }) => {
             <button onClick={handleConfirmName} className="confirm-button">Confirm</button>
             <button onClick={handleCancel} className="cancel-button">Cancel</button>
           </div>
-      </div>
+        </div>
       )}
-      
     </div>
   );
 };
