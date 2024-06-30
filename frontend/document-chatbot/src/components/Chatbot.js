@@ -25,7 +25,7 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
   useEffect(() => {
     const storedKey = localStorage.getItem('openaiKey');
     if (storedKey) {
-      // setOpenaiKey(storedKey);
+      setOpenaiKey(storedKey);
       setApiKeyValid(true);
     }
     fetchCollections();
