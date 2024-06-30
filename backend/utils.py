@@ -35,11 +35,7 @@ def modify_string(s):
     
     # Replace consecutive periods
     s = re.sub('\.\.+', '.', s)
-    
-    # Check if the string is a valid IPv4 address
-    if re.match('^(\d{1,3}\.){3}\d{1,3}$', s):
-        s = 'NotValidIPv4'
-    
+  
     # Ensure the string length is within 3-63 characters
     if len(s) < 3:
         s += 'abc'
