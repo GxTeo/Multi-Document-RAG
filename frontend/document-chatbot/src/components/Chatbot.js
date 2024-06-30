@@ -208,7 +208,7 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
           params: {
             collection_name: collection
           },
-          timeout: 3000
+          timeout: 50000
         });
         if (response.status === 200) {
             alert('Collection deleted successfully!');
