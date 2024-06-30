@@ -14,11 +14,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 
+
+import nest_asyncio
+nest_asyncio.apply()
+
 # Helper functions
 from utils import *
 
 app = FastAPI()
-origins = ["http://localhost:3000"]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -298,7 +302,7 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
         raise HTTPException(status_code=400, detail="The collection has not been indexed. Please generate the index first.")
     
     # Based on experience, gpt-4 is more suitable to behave as agent than gpt-3.5-turbo
-    llm = OpenAI(model="gpt-3.5-turbo")
+    llm = OpenAI(model="gpt-4")
     Settings.llm = llm
 
     print(f"Chat history: {chat_history_list}")
