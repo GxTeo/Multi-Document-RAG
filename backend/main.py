@@ -163,13 +163,15 @@ async def display_collections():
 @app.delete('/delete_collection')
 async def delete_collection(collection_name: str = Query(...)):
     try:
+        print("Collection name: ", collection_name)
         for file in mongo_client['Documents'][collection_name].find():
             # Check if file has filename attributes in the mongo collection
-            if 'filename' in file and modify_string(file['filename']) in remote_database.list_collections():
-                remote_database.delete_collection(modify_string(file['filename']))
+            if 'filename' in file and remote_database.get_collection(name=modify_string(file['filename'])):
+                remote_database.delete_collection(name=modify_string(file['filename']))
             else:
-                pass
+                print('File does not exist in chroma database')
     except Exception as e:
+        print(f"Unable to remove the collection from the chroma database. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to remove the collection from the chroma database")
         
     try:
@@ -182,6 +184,7 @@ async def delete_collection(collection_name: str = Query(...)):
         chat_history_collection.drop()
 
     except Exception as e:
+        print(f"Unable to remove the collection from MongoDB. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to remove the collection from MongoDB")
     
     try:
@@ -203,14 +206,14 @@ async def generate_index(collection_name: str = Form(...)):
     try:
         mongo_client.server_info()
     except Exception as e:
-        print("Unable to connect to the mongo database")
+        print(f"Unable to connect to the mongo database Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to connect to the mongo database")
     
     # Test the connection to the chroma database
     try:
-        remote_database.list_collections()
+        remote_database.heartbeat()
     except Exception as e:
-        print("Unable to connect to the chroma database")
+        print(f"Unable to connect to the chroma database Error: {e}", )
         raise HTTPException(status_code=500, detail="Unable to connect to the chroma database")
 
     try:
