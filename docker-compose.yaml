@@ -1,25 +1,5 @@
 version: '3'
 services:
-  frontend:
-    container_name: multi-doc-rag-frontend
-    build:
-      context: ./frontend/document-chatbot
-      dockerfile: Dockerfile
-    ports:
-      - '3000:3000'
-    depends_on:
-      - backend
-
-  backend:
-    container_name: multi-doc-rag-backend
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - '8005:8005'
-    depends_on:
-      - mongodb
-      - chroma
 
   mongodb:
     container_name: multi-doc-rag-mongodb
@@ -34,3 +14,31 @@ services:
       dockerfile: Dockerfile
     ports:
       - '8000:8000'
+
+  backend:
+    container_name: multi-doc-rag-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '8005:8005'
+    depends_on:
+      - mongodb
+      - chroma
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    container_name: multi-doc-rag-frontend
+    build:
+      context: ./frontend/document-chatbot
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/document-chatbot:/app
+
+
+
