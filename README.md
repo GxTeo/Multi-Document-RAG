@@ -4,8 +4,12 @@
 This repository contains the implementation of a multi-document Retriever and Reader (RAG) model. The RAG model is a fusion of the retrieval-based and generative approaches to question answering. It retrieves relevant documents from a corpus and uses them to generate an answer to a given question.
 
 ## Features
+- **Multi-User Authentication**: A simple multi-user authentication has been created, now users can create their own username and password. Usernames must be unique and data are stored and retrieved for each specific user.
+
 - **Multi-Document Retrieval**: The model is capable of retrieving relevant documents from a large corpus, enabling it to handle complex queries that require information from multiple sources.
+
 - **Generative Question Answering**: The model generates detailed and accurate answers to questions, leveraging the information retrieved from multiple documents.
+
 - **Scalability**: The model is designed to be scalable and can handle large corpora and complex queries.
 
 ## Applications
@@ -76,8 +80,6 @@ Here is a screenshot of the application:
 In the future, I plan to extend the capabilities of this application in the following ways:
 
 - **Leverage Open Source Large Language Models (LLMs)**: I plan to incorporate more open-source LLMs to avoid reliance of OpenAI models and to provide more flexibility in terms of the models that can be used. I also wish that the application can be brought completely offline to avoid privacy issues
-
-- **Multi-User Authentication**: I plan to add multi-user authentication to the application. This will allow multiple users to use the application simultaneously while maintaining their individual settings and data.
 
 - **Change Vector Databases**: ChromaDB seems very unreliable, where we have methods breaking and poor documentation webpage. Maybe I would try FAISS or Redis in the near future.
 
