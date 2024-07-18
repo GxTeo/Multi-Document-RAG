@@ -25,3 +25,23 @@
   align-items: center;
   padding: 20px;
 }
+
+
+.welcome-container {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.navigation-links {
+  margin-top: 20px;
+}
+
+.link {
+  color: #007bff; /* Bootstrap primary color */
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
