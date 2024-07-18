@@ -5,14 +5,12 @@ import axios from 'axios';
 import config from '../config';
 import './FileUpload.css';
 
-const FileUpload = ({ fetchCollections }) => {
+const FileUpload = ({ fetchCollections, token }) => {
   const [files, setFiles] = useState([]);
   const [collectionName, setCollectionName] = useState('');
   const [isNamePromptVisible, setIsNamePromptVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [completedUploads, setCompletedUploads] = useState(0);
-  const token = localStorage.getItem('token');
-
 
   const sendFilesToBackend = async (collectionName, files = []) => {  
     try {

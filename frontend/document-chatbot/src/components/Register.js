@@ -17,17 +17,15 @@ export const Register = () => {
                 password: password.value,
               });
         
-            if (response.status !== 200) {
-              alert(response.data.detail); // show the error message
-              return;
-            }
-        
             alert('User created successfully');
+            navigate('/login');
           } catch (error) {
-            alert('Failed to register');
-            console.error('Error:', error);
+            const errorMessage =  error.response.data.detail
+
+            alert(`Error ${errorMessage}`);
+            // console.error('Error:', error);
           }
-        navigate('/login');
+        
     };
 
   return <AuthForm title="Register" onSubmit={handleRegister} submitText="Register" />;

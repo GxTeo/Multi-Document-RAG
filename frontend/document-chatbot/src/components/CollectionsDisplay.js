@@ -3,10 +3,10 @@ import axios from 'axios';
 import config from '../config'; // Ensure this contains the correct API URLs
 import './CollectionsDisplay.css';
 
-const CollectionsDisplay = () => {
+const CollectionsDisplay = ({token}) => {
   const [collections, setCollections] = useState({});
   const [openCollections, setOpenCollections] = useState({});
-  const token = localStorage.getItem('token');
+  // const token = localStorage.getItem('token');
 
   useEffect(() => {
     fetchCollections();

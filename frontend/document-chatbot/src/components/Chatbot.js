@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown';
 
 import { FaEye, FaEyeSlash, FaCheckCircle } from 'react-icons/fa';
 
-function Chatbot({ setFetchCollections, handleFetchCollections }) {
+function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
@@ -19,7 +19,7 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
   const [collections, setCollections] = useState([]);
   const [isGeneratingIndex, setIsGeneratingIndex] = useState(false);
   const [indexedCollections, setIndexedCollections] = useState({});
-  const token = localStorage.getItem('token');
+  // const token = localStorage.getItem('token');
 
   const [loading, setLoading] = useState(false);
   
