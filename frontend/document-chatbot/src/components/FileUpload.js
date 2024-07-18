@@ -11,6 +11,7 @@ const FileUpload = ({ fetchCollections }) => {
   const [isNamePromptVisible, setIsNamePromptVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [completedUploads, setCompletedUploads] = useState(0);
+  const token = localStorage.getItem('token');
 
 
   const sendFilesToBackend = async (collectionName, files = []) => {  
@@ -23,6 +24,7 @@ const FileUpload = ({ fetchCollections }) => {
         const response = await axios.post(`${config.apiUrl}/upload_files`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`,
           },
           timeout: 100000,
         });

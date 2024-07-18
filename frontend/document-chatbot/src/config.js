@@ -1,5 +1,6 @@
 const config = {
-    apiUrl: 'http://localhost:8005', // API URL
-  };
+  apiUrl: "http://localhost:8005", // API URL
   
-  export default config;
+};
+// console.log('API URL:', config.apiUrl);
+export default config;

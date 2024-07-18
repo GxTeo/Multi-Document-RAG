@@ -1,0 +1,5 @@
+multi-doc-rag-env/**
+frontend/document-chat/node_modules/
+frontend/document-chat/package*.json
+__pycache__/
+.env

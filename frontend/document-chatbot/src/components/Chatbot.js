@@ -19,6 +19,7 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
   const [collections, setCollections] = useState([]);
   const [isGeneratingIndex, setIsGeneratingIndex] = useState(false);
   const [indexedCollections, setIndexedCollections] = useState({});
+  const token = localStorage.getItem('token');
 
   const [loading, setLoading] = useState(false);
   
@@ -64,7 +65,12 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
 
   const fetchCollections = async () => {
     try {
-      const response = await axios.get(`${config.apiUrl}/get_collections`);
+      const response = await axios.get(`${config.apiUrl}/get_collections`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}` // include the token in the Authorization header
+        }
+    });
       if (response.status === 200) {
         const { indexed_collections, non_indexed_collections } = response.data;
         setCollections([...indexed_collections, ...non_indexed_collections]);
@@ -92,8 +98,12 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
 
   const fetchChatHistory = async (collectionName) => {
     try {
-        const response = await axios.get(`${config.apiUrl}/get_chat_history?collection_name=${collectionName}`);
-        setMessages(response.data);
+      const response = await axios.get(`${config.apiUrl}/get_chat_history?collection_name=${collectionName}`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+        }
+      });        
+      setMessages(response.data);
     } catch (error) {
         console.error("Failed to fetch chat history:", error);
         setMessages([]);
@@ -118,7 +128,8 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
       formData.append('collection_name', selectedCollection);
       const response = await axios.post(`${config.apiUrl}/chat_with_agent`, formData, {
         headers: {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}` 
         },
         timeout: 60000
     }); 
@@ -175,7 +186,8 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
       formData.append('collection_name', selectedCollection)
       const response = await axios.post(`${config.apiUrl}/generate_index`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         },
         timeout: 60000
       });
@@ -205,6 +217,9 @@ function Chatbot({ setFetchCollections, handleFetchCollections }) {
     }
       try {
         const response = await axios.delete(`${config.apiUrl}/delete_collection`, {
+          headers: {
+            'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+          },
           params: {
             collection_name: collection
           },
