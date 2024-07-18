@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 
+import Logout from './components/Logout';
 import FileUpload from './components/FileUpload';
 import CollectionsDisplay from './components/CollectionsDisplay'; // Import the CollectionsDisplay component
 import Chatbot from './components/Chatbot';
@@ -37,6 +38,9 @@ function App() {
           path="/home"
           element={
             <div className="App">
+              <div className="logout-container" style={{ position: 'absolute', top: 0, right: 0, padding: '20px' }}>
+                <Logout />
+              </div>
               <div className="left">
                 <FileUpload fetchCollections={handleFetchCollections} />
                 <CollectionsDisplay key={updateToggle} />
@@ -67,5 +71,4 @@ function App() {
     </Router>
   );
 }
-
 export default App;
