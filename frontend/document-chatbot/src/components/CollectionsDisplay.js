@@ -6,6 +6,7 @@ import './CollectionsDisplay.css';
 const CollectionsDisplay = () => {
   const [collections, setCollections] = useState({});
   const [openCollections, setOpenCollections] = useState({});
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
     fetchCollections();
@@ -13,7 +14,11 @@ const CollectionsDisplay = () => {
 
   const fetchCollections = async () => {
     try {
-      const response = await axios.get(`${config.apiUrl}/display_collections`);
+      const response = await axios.get(`${config.apiUrl}/display_collections`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // include the token in the Authorization header
+        }
+      });      
       if (response.status === 200) {
         setCollections(response.data);
         // Initialize all collections to be collapsed
