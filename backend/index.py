@@ -9,13 +9,14 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 
 class QueryEngineTools:
-    def __init__(self, collection_name, embed_model,  mongo_reader, mongo_client, chroma_client, db_name='Documents', top_k=3):
+    def __init__(self, collection_name, embed_model,  mongo_reader, mongo_client, chroma_client, username, db_name='Documents', top_k=3):
         self.top_k = top_k
         self.mongo_reader = mongo_reader
         self.mongo_client = mongo_client
         self.chroma_client = chroma_client
         self.db_name = db_name
         self.collection_name = collection_name
+        self.username = username
         Settings.embed_model = embed_model
 
     def __read_collection(self):
@@ -23,7 +24,7 @@ class QueryEngineTools:
         field_names = ['text']
 
         collection = self.mongo_client[self.db_name][self.collection_name]
-        for document in collection.find():
+        for document in collection.find({'username': self.username}):
             query_dict = {'filename': document['filename']}
             doc = self.mongo_reader.load_data(db_name=self.db_name, collection_name=self.collection_name, query_dict=query_dict, field_names=field_names)
             doc[0].metadata['filename'] = document['filename']
@@ -39,7 +40,10 @@ class QueryEngineTools:
         docs_dict = self.__read_collection()
         for filename, doc in docs_dict.items():
             filename = modify_string(filename)
-            chroma_collection = self.chroma_client.get_or_create_collection(filename)
+
+            # Given that this is a multi-user system, we need to ensure that the collection is unique to the user
+            chroma_collection_name = f"{filename}_{self.username}"
+            chroma_collection = self.chroma_client.get_or_create_collection(chroma_collection_name)
             vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             index = VectorStoreIndex.from_documents(
