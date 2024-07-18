@@ -112,14 +112,13 @@ async def create_user(request:User):
         # Check if the user already exists
         if user_collection.find_one({"username":request.username}):
             # raise an error indicating the user already exists
-            error_msg = {"error": "User already exists"}
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please use a different username")
         else:
             user_collection.insert_one(user_object)
     except Exception as e:
         print(f"Unable to create user. Error: {e}")
         # raise the error if the user cannot be created
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to create user")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e}")
     
     return {"detail": "User created successfully"}, 200
 
