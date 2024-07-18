@@ -58,7 +58,7 @@ function App() {
           path="/"
           element={
             <div className="welcome-container">
-              <h1>Welcome to the Multi-Doc-RAG</h1>
+              <h1>Welcome to Multi-Doc-RAG</h1>
               <nav className="navigation-links">
                 <Link to="/login" className="link">Login</Link>
                 <span> | </span>
