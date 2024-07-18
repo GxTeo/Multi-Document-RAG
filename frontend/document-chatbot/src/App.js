@@ -1,6 +1,8 @@
 // src/App.js
 import React, { useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
+
 
 import './App.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
@@ -16,6 +18,11 @@ function App() {
   const fetchCollectionsRef = useRef(null);
   const [updateToggle, setUpdateToggle] = useState(false); // To trigger re-fetches
   const token = localStorage.getItem('token');
+  const ProtectedRoute = ({ children }) => {
+    const isLoggedIn = localStorage.getItem('token'); // Adjust this condition based on how you handle authentication
+
+    return isLoggedIn ? children : <Navigate to="/" />;
+  };
 
   const setFetchCollections = (fetchCollectionsFunction) => {
     fetchCollectionsRef.current = fetchCollectionsFunction;
@@ -37,21 +44,24 @@ function App() {
         <Route
           path="/home"
           element={
-            <div className="App">
-              <div className="logout-container" style={{ position: 'absolute', top: 0, right: 0, padding: '20px' }}>
-                <Logout />
+            <ProtectedRoute>
+              <div className="App">
+                <div className="logout-container" style={{ position: 'absolute', top: 0, right: 0, padding: '20px' }}>
+                  <Logout />
+                </div>
+                <div className="left">
+                  <FileUpload fetchCollections={handleFetchCollections} token={token}/>
+                  <CollectionsDisplay key={updateToggle} token={token}/>
+                </div>
+                <div className="right">
+                  <Chatbot
+                    setFetchCollections={setFetchCollections}
+                    handleFetchCollections={handleFetchCollections}
+                    token={token}
+                  />
+                </div>
               </div>
-              <div className="left">
-                <FileUpload fetchCollections={handleFetchCollections} />
-                <CollectionsDisplay key={updateToggle} />
-              </div>
-              <div className="right">
-                <Chatbot
-                  setFetchCollections={setFetchCollections}
-                  handleFetchCollections={handleFetchCollections}
-                />
-              </div>
-            </div>
+            </ProtectedRoute>
           }
         />
         <Route
