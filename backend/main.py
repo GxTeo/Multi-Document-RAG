@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 
+# Authentication
 from hashing import Hash
 from oauth import get_current_user
 from jwttoken import create_access_token
@@ -107,14 +108,23 @@ async def create_user(request:User):
 
     try:
         user_collection = user_db["users"]
+
+        # Username validation (Username must be between 4 and 20 characters and must not contain special characters)
         if not validate_username(request.username):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid username. Username must be between 4 and 20 characters and must not contain special characters")
-        # Check if the user already exists
+        
+        # Password validation (Password must be at least 8 characters and contain at least one special character)
+        if len(request.password) < 8 or not any(char in "!@#$%^&*()-_+=~`[]{}|;:,.<>?/" for char in request.password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password. Password must be at least 8 characters and contain at least one special character")
+
+        # Check if the username already exists
         if user_collection.find_one({"username":request.username}):
             # raise an error indicating the user already exists
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please use a different username")
-        else:
-            user_collection.insert_one(user_object)
+        
+        # Insert the user into the database
+        user_collection.insert_one(user_object)
+
     except Exception as e:
         print(f"Unable to create user. Error: {e}")
         # raise the error if the user cannot be created
@@ -153,6 +163,7 @@ async def validate_openai_key(api_key: ApiKey):
         # Set the API key in environment variable
         os.environ["OPENAI_API_KEY"] =  api_key.api_key
         return {"detail": "API key is valid"}, 200
+    
     except openai.AuthenticationError as e:
         print('Error message:', e)
         raise HTTPException(status_code=400, detail="Invalid API key")
@@ -177,11 +188,12 @@ async def get_collections(current_user: User = Depends(get_current_user)):
                     indexed_collections.append(collection)
                 elif not metadata['indexed'] and collection != 'metadata':
                     non_indexed_collections.append(collection)
-
-        # Return the collections based on the indexed status
-        return {"indexed_collections": indexed_collections, "non_indexed_collections": non_indexed_collections, 'status': 200}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unable to retrieve collections name")
+    
+    # Return the collections based on the indexed status
+    return {"indexed_collections": indexed_collections, "non_indexed_collections": non_indexed_collections, 'status': 200}
 
 # Endpoint to save the uploaded files into the mongo database
 @app.post("/upload_files")
@@ -235,10 +247,12 @@ async def display_collections(current_user: User = Depends(get_current_user)):
             # Add the collection to the dictionary if it has documents
             if len(collection_list) > 0:
                 collection_dict[collection] = collection_list
-        return collection_dict
+        
     except Exception as e:
         print(f"Unable to retrieve the collections. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to retrieve the collections")
+    
+    return collection_dict
 
 # Endpoint to delete a collection from the mongo database and the chroma database
 @app.delete('/delete_collection')
@@ -335,15 +349,12 @@ async def get_chat_history(collection_name: str = Query(...), current_user: User
             # Append assistant response
             assistant_response = Messages(text=chat['response']['content'], sender=chat['response']['role'])
             chat_history_list.append(assistant_response)
-        
-        return chat_history_list
-    
+
     except Exception as e:
         print(f"Unable to retrieve the chat history from the mongo database. Error: {e}")
         raise HTTPException(status_code=500, detail=f"Unable to retrieve the chat history from the mongo database.")
-
-
-
+    
+    return chat_history_list
 
 @app.post("/chat_with_agent")
 async def chat_with_agent(message: str = Form(...), collection_name: str = Form(...), current_user: User = Depends(get_current_user)):
@@ -419,12 +430,13 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
         except Exception as e:
             print(f"Unable to save the chat history into the mongo database. Error: {e}")
             raise HTTPException(status_code=500, detail=f"Unable to save the chat history into the mongo database. Error: {e}")
-        
-        return {"response": str(response)}, 200
-    
+            
     except Exception as e:
         print(f"Unable to chat with the agent. Error: {e}")
         raise HTTPException(status_code=500, detail=f"Unable to chat with the agent. Error: {e}")
+    
+    return {"response": str(response)}, 200
+
 
 
 
