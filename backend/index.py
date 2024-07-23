@@ -41,8 +41,8 @@ class QueryEngineTools:
         for filename, doc in docs_dict.items():
             filename = modify_string(filename)
 
-            # Given that this is a multi-user system, we need to ensure that the collection is unique to the user
-            chroma_collection_name = f"{filename}_{self.username}"
+            
+            chroma_collection_name = f"{filename}_{self.username}" # Given that this is a multi-user system, we need to ensure that the collection is unique to the user
             chroma_collection = self.chroma_client.get_or_create_collection(chroma_collection_name)
             vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
