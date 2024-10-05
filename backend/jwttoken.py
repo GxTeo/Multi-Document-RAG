@@ -28,5 +28,5 @@ def verify_token(token:str,credentials_exception):
  
  # return the User object
  user = main.get_user(username=token_data.username)
- print('User object: ',user)
+#  print('User object: ',user)
  return user
