@@ -105,7 +105,10 @@ async def create_user(request:User):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please use a different username")
         
         # Insert the user into the database
-        user_collection.insert_one(user_object)
+        # print(f"Inserting user object: {user_object}")
+        result = user_collection.insert_one(user_object)
+        # inserted_user = user_collection.find_one({"_id": result.inserted_id})
+        # print(f"Retrieved inserted user: {inserted_user}")
 
     except Exception as e:
         print(f"Unable to create user. Error: {e}")
@@ -135,15 +138,21 @@ async def login(request:OAuth2PasswordRequestForm = Depends()):
 
 # Endpoint to validate the OpenAI API key
 @app.post('/validate_openai_key')
-async def validate_openai_key(api_key: ApiKey):
+async def validate_openai_key(api_key: ApiKey, current_user: User = Depends(get_current_user)):
     # lazy import 
     import openai
     from openai import OpenAI
     client = OpenAI(api_key=api_key.api_key)
+
+    current_username = current_user.username
     try:
         client.models.list()
-        # Set the API key in environment variable
-        os.environ["OPENAI_API_KEY"] =  api_key.api_key
+
+        # Save the API key in MONGO database
+        user_db = MONGO_CLIENT["Users"]
+        user_collection = user_db["users"]
+
+        user_collection.update_one({"username": current_username}, {"$set": {"openai_key": api_key.api_key}}, upsert=True)
         return JSONResponse(content={"detail": "API key is valid"}, status_code=200)
     
     except openai.AuthenticationError as e:
@@ -152,6 +161,25 @@ async def validate_openai_key(api_key: ApiKey):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+@app.get('/get_openai_key')
+async def get_openai_key(current_user: User = Depends(get_current_user)):
+
+    # Retrieve the OpenAI API key from the MONGO database
+    current_username = current_user.username
+    try:
+        user_db = MONGO_CLIENT["Users"]
+        user_collection = user_db["users"]
+        user = user_collection.find_one({"username": current_username})
+        if user:
+            api_key = user["openai_key"]
+        else:
+            api_key = None
+        return JSONResponse(content={"api_key": api_key}, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Unable to retrieve the OpenAI API key")
+    
+
     
 @app.get('/get_collections')
 async def get_collections(current_user: User = Depends(get_current_user)):
@@ -231,7 +259,7 @@ async def display_collections(current_user: User = Depends(get_current_user)):
                 collection_dict[collection] = collection_list
         
     except Exception as e:
-        print(f"Unable to retrieve the collections. Error: {e}")
+        # print(f"Unable to retrieve the collections. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to retrieve the collections")
     
     return JSONResponse(content=collection_dict, status_code=200)
@@ -284,6 +312,8 @@ async def generate_index(collection_name: str = Form(...), current_user: User = 
     from llama_index.embeddings.openai import OpenAIEmbedding
     
     current_username = current_user.username
+    api_key = MONGO_CLIENT['Users']['users'].find_one({'username': current_username})['openai_key']
+
     # Test the connection to the mongo database
     try:
         MONGO_CLIENT.server_info()
@@ -299,12 +329,12 @@ async def generate_index(collection_name: str = Form(...), current_user: User = 
         raise HTTPException(status_code=500, detail="Unable to connect to the chroma database")
 
     try:
-        embed_model = OpenAIEmbedding(model="text-embedding-3-small", embed_batch_size=256)
+        embed_model = OpenAIEmbedding(model="text-embedding-3-small", embed_batch_size=256, api_key=api_key)
     except Exception as e:
         print("Unable to connect to the OpenAI API")
         raise HTTPException(status_code=500, detail="Unable to connect to the OpenAI API")
 
-    query_engine_tools = QueryEngineTools(collection_name=collection_name, embed_model=embed_model, MONGO_READER=MONGO_READER, MONGO_CLIENT=MONGO_CLIENT, chroma_client=REMOTE_DATABASE, db_name='Documents', top_k=3, username=current_username).get_query_engine_tools()
+    query_engine_tools = QueryEngineTools(collection_name=collection_name, embed_model=embed_model, mongo_reader=MONGO_READER, mongo_client=MONGO_CLIENT, chroma_client=REMOTE_DATABASE, db_name='Documents', top_k=3, username=current_username).get_query_engine_tools()
     # If the collection has been indexed, set a boolean flag to True in MongoDB
     metadata_collection = MONGO_CLIENT['Documents']['metadata']
     metadata_collection.update_one({'collection_name': collection_name, 'username': current_username}, {"$set": {"indexed": True}}, upsert=True)
@@ -354,6 +384,8 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
     REGION_NAME = os.getenv("AWS_DEFAULT_REGION")
 
     current_username = current_user.username
+    api_key = MONGO_CLIENT['Users']['users'].find_one({'username': current_username})['openai_key']
+
     # Retrieve any chat history from the mongo database for the collection if it exists
     try:
         collection = MONGO_CLIENT['Documents'][collection_name]
@@ -392,7 +424,7 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
         raise HTTPException(status_code=400, detail="The collection has not been indexed. Please generate the index first.")
     
     # Based on experience, gpt-4 is more suitable to behave as agent than gpt-3.5-turbo
-    llm = OpenAI(model="gpt-4o")
+    llm = OpenAI(model="gpt-4o", api_key=api_key)
     Settings.llm = llm
 
     # llm = SageMakerLLM(
@@ -428,8 +460,7 @@ async def chat_with_agent(message: str = Form(...), collection_name: str = Form(
     except Exception as e:
         print(f"Unable to chat with the agent. Error: {e}")
         raise HTTPException(status_code=500, detail=f"Unable to chat with the agent. Error: {e}")
-    
-    return JSONResponse(content={"response": response.response}, status_code=200)
+    return JSONResponse(content={"response": str(response)}, status_code=200)
 
 
 
