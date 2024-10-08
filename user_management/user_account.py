@@ -80,7 +80,10 @@ def delete_user(username, password):
     if not Hash.verify(user["password"], password):
         return "Please enter the correct username and password."
     
-    result = USER_COLLECTION.delete_one({"username": username, "password": password})    
+    result = USER_COLLECTION.delete_one({"username": username, "password": password})   
+
+    # Delete the corresponding user data from other collections
+     
     return "User deleted successfully."
 
 # Create Gradio interfaces
