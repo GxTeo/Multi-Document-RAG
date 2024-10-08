@@ -134,7 +134,7 @@ function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) 
         timeout: 60000
     }); 
       if (response.status === 200) {
-        const botMessage = { text: response.data[0].response, sender: 'bot' };
+        const botMessage = { text: response.data.response, sender: 'bot' };
         setMessages((prev) => [...prev, botMessage]);
       }
     } catch (error) {
