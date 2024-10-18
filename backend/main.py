@@ -81,6 +81,11 @@ async def root():
     """
     return HTMLResponse(content=html_content, status_code=200)
 
+@app.post('/validate-token')
+async def validate_token(current_user: User = Depends(get_current_user)):
+    return JSONResponse(content={"detail": "Token is valid"}, status_code=200)
+
+
 @app.post('/register')
 async def create_user(request:User):
     hashed_pass = Hash.bcrypt(request.password)
@@ -128,7 +133,7 @@ async def login(request:OAuth2PasswordRequestForm = Depends()):
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
         if not Hash.verify(user["password"],request.password):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
     except Exception as e:
         print(f"Unable to login. Error: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
@@ -157,7 +162,7 @@ async def validate_openai_key(api_key: ApiKey, current_user: User = Depends(get_
     
     except openai.AuthenticationError as e:
         print('Error message:', e)
-        raise HTTPException(status_code=400, detail="Invalid API key")
+        raise HTTPException(status_code=401, detail="Invalid API key")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -269,33 +274,38 @@ async def display_collections(current_user: User = Depends(get_current_user)):
 async def delete_collection(collection_name: str = Query(...), current_user: User = Depends(get_current_user)):
     current_username = current_user.username
     try:
-        print("Collection name: ", collection_name)
         for file in MONGO_CLIENT['Documents'][collection_name].find({'username': current_username}):
-            # Check if file has filename attributes in the mongo collection
-            chroma_collection_name = f"{modify_string(file['filename'])}_{current_username}"
-            if 'filename' in file and REMOTE_DATABASE.get_collection(name=chroma_collection_name):
-                REMOTE_DATABASE.delete_collection(name=chroma_collection_name)
-            else:
-                print('File does not exist in chroma database')
+            if 'filename' in file:
+                chroma_collection_name = f"{modify_string(file['filename'])}_{current_username}"
+                if 'filename' in file and REMOTE_DATABASE.get_collection(name=chroma_collection_name):
+                    REMOTE_DATABASE.delete_collection(name=chroma_collection_name)
+                else:
+                    print('File does not exist in chroma database')
+
     except Exception as e:
         print(f"Unable to remove the collection from the chroma database. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to remove the collection from the chroma database")
         
     try:
-
         document_collection = MONGO_CLIENT['Documents'][collection_name]
         deleted_files = document_collection.delete_many({'username': current_username})
         metadata_collection = MONGO_CLIENT['Documents']['metadata']
         metadata_collection.delete_one({'collection_name': collection_name, 'username': current_username})
-
-        # Drop the chat history for the collection that is tagged with the username
-        chat_history_collection = MONGO_CLIENT['Documents'][collection_name]['chat_history']
-        chat_history_collection.drop()
-
     except Exception as e:
         print(f"Unable to remove the collection from MongoDB. Error: {e}")
         raise HTTPException(status_code=500, detail="Unable to remove the collection from MongoDB")
     
+    try:
+        chat_history = MONGO_CLIENT['Documents'][collection_name]['chat_history']
+        result = chat_history.delete_many({'username': current_username})
+        if result.deleted_count > 0:
+            print(f"Successfully deleted {result.deleted_count} chat history entries for user {current_username}")
+        else:
+            print(f"No chat history found for user {current_username}")
+
+    except Exception as e:
+        print(f"Unable to remove the chat history from the mongo database. Error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to remove the chat history from the mongo database")    
     try:
         if collection_name in query_engine_tools_dict:
             query_engine_tools_dict.pop(collection_name)
@@ -366,7 +376,7 @@ async def get_chat_history(collection_name: str = Query(...), current_user: User
         print(f"Unable to retrieve the chat history from the mongo database. Error: {e}")
         raise HTTPException(status_code=500, detail=f"Unable to retrieve the chat history from the mongo database.")
     
-    return JSONResponse(content=chat_history_list, status_code=200)
+    return chat_history_list
 
 @app.post("/chat_with_agent")
 async def chat_with_agent(message: str = Form(...), collection_name: str = Form(...), current_user: User = Depends(get_current_user)):
