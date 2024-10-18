@@ -37,9 +37,9 @@ function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) 
     }
 }, [selectedCollection]);
 
-  useEffect(() => {
-    retrieveApiKey();
-  }, []);
+  // useEffect(() => {
+  //   retrieveApiKey();
+  // }, []);
   
   const eraseApiKey = () => {
     // setApiKeyValid(false);                // Reset validation state

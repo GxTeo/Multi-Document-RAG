@@ -5,13 +5,13 @@ import { useAuth } from '../context/AuthContext';
 
 function Logout() {
     const navigate = useNavigate();
-    const { setToken } = useAuth();
+    const { logout } = useAuth();
 
   
     const handleLogout = () => {
       const isConfirmed = window.confirm('Are you sure you want to logout?');
       if (isConfirmed) {
-        setToken(null); // Clear the token from context
+        logout(); // Clear the token from context
         navigate('/');
       }
     };

@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const Login = () => {
     const navigate = useNavigate();
-    const { setToken } = useAuth();
+    const { login } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -29,7 +29,7 @@ export const Login = () => {
             return;
           }
           const data = response.data;
-          setToken(data.access_token); // Store token in context
+          login(data.access_token); // Store token in context
           navigate('/home');
         } catch (error) {
           console.error(error);

@@ -1,6 +1,6 @@
 // src/App.js
-import React, { useRef, useState, useCallback } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Login } from './components/Login';
@@ -11,14 +11,24 @@ import CollectionsDisplay from './components/CollectionsDisplay';
 import Chatbot from './components/Chatbot';
 import './App.css';
 
+function ProtectedRoute({ children }) {
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login', { state: { from: location }, replace: true });
+    }
+  }, [token, navigate, location]);
+
+  return token ? children : null;
+}
+
 function AppContent() {
   const { token } = useAuth();
   const fetchCollectionsRef = useRef(null);
   const [updateToggle, setUpdateToggle] = useState(false);
-
-  const ProtectedRoute = ({ children }) => {
-    return token ? children : <Navigate to="/" />;
-  };
 
   const setFetchCollections = (fetchCollectionsFunction) => {
     fetchCollectionsRef.current = fetchCollectionsFunction;
