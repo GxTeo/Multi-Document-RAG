@@ -24,11 +24,6 @@ function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) 
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    const storedKey = localStorage.getItem('openaiKey');
-    if (storedKey) {
-      setOpenaiKey(storedKey);
-      setApiKeyValid(true);
-    }
     fetchCollections();
     setFetchCollections(fetchCollections);
   }, []);
@@ -42,18 +37,29 @@ function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) 
     }
 }, [selectedCollection]);
 
+  // useEffect(() => {
+  //   retrieveApiKey();
+  // }, []);
+  
   const eraseApiKey = () => {
-    localStorage.removeItem('openaiKey'); // Remove the key from local storage
-    setApiKeyValid(false);                // Reset validation state
+    // setApiKeyValid(false);                // Reset validation state
     setOpenaiKey('');                     // Clear the input field
   };
 
   const validateApiKey = async () => {
     try {
-      const response = await axios.post(`${config.apiUrl}/validate_openai_key`, { api_key: openaiKey });
+        const response = await axios.post(`${config.apiUrl}/validate_openai_key`, 
+        { 
+          api_key: openaiKey 
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // include the token in the Authorization header
+          }
+        });
       if (response.status === 200) {
         setApiKeyValid(true);
-        localStorage.setItem('openaiKey', openaiKey); // Store the key in local storage
         setOpenaiKey(''); // Clear the input field
         alert('Valid API key! You can now send messages to the chatbot.');
       }
@@ -62,6 +68,23 @@ function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) 
       alert('Invalid API key! Please enter a valid API key.');
     }
   };
+
+  const retrieveApiKey = async () => {
+    try {
+      const response = await axios.get(`${config.apiUrl}/get_openai_key`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // include the token in the Authorization header
+        }
+      });
+      if (response.status === 200) {
+        setApiKeyValid(true);
+      }
+    } catch (error) {
+      alert("Unable to retrieve API key. Please enter your OpenAI key.");
+      setApiKeyValid(false);
+    }
+  };
+
 
   const fetchCollections = async () => {
     try {
@@ -134,7 +157,7 @@ function Chatbot({ setFetchCollections, handleFetchCollections, token={token}}) 
         timeout: 60000
     }); 
       if (response.status === 200) {
-        const botMessage = { text: response.data[0].response, sender: 'bot' };
+        const botMessage = { text: response.data.response, sender: 'bot' };
         setMessages((prev) => [...prev, botMessage]);
       }
     } catch (error) {

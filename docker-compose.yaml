@@ -1,11 +1,12 @@
-version: '3'
+version: '3.8'
 services:
-
   mongodb:
     container_name: multi-doc-rag-mongodb
     image: mongo:latest
     ports:
       - '27017:27017'
+    volumes:
+      - mongo_volume:/data/db
 
   chroma:
     container_name: multi-doc-rag-chroma
@@ -14,6 +15,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - '8000:8000'
+    volumes:
+      - chroma_volume:/data/chroma  # Ensure this is the correct path
 
   backend:
     container_name: multi-doc-rag-backend
@@ -40,5 +43,6 @@ services:
     volumes:
       - ./frontend/document-chatbot:/app
 
-
-
+volumes:
+  mongo_volume:
+  chroma_volume:
