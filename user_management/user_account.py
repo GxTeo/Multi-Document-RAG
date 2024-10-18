@@ -1,5 +1,7 @@
 import gradio as gr
 from pymongo import MongoClient
+import chromadb
+
 
 # Authentication
 import sys
@@ -16,6 +18,9 @@ from backend.hashing import Hash
 MONGO_CLIENT = MongoClient('localhost', 27017)
 USER_DB = MONGO_CLIENT['Users']
 USER_COLLECTION = USER_DB['users']
+
+# Connect to CHROMA database
+CHROMA_DATABASE = chromadb.HttpClient(host='localhost', port=8000)
 
 # Create a new user
 def create_user(username, password):
@@ -49,8 +54,8 @@ def read_user(search_term=None):
                 # Add other fields as necessary
             })
         
-        if not user_list:
-            return "No users found."
+        if len(user_list) == 0:
+            return [{"message": "No users found."}]
         
         return user_list
     except Exception as e:
@@ -80,10 +85,32 @@ def delete_user(username, password):
     if not Hash.verify(user["password"], password):
         return "Please enter the correct username and password."
     
-    result = USER_COLLECTION.delete_one({"username": username, "password": password})   
+   # Delete user data from MONGO database
+    result = USER_COLLECTION.delete_one({"username": username})
+    if result.deleted_count == 1:
+        print(f"User {username} successfully deleted")
+    else:
+        print(f"No user found with username {username}")
+        
+    document_collections = MONGO_CLIENT['Documents']
+    for collection_name in document_collections.list_collection_names():
+        for file in document_collections[collection_name].find({'username': username}):
+            # Check if file has filename attributes in the mongo collection
+            if 'filename' in file:
+                chroma_collection_name = f"{modify_string(file['filename'])}_{username}"
 
-    # Delete the corresponding user data from other collections
-     
+                try:
+                    CHROMA_DATABASE.delete_collection(name=chroma_collection_name)
+                    print(f"Collection {chroma_collection_name} deleted.")
+                except:
+                    print(f"Collection {chroma_collection_name} not found.")
+                    pass
+        # Delete the corresponding user data from other collections in the MONGO database
+        document_collections[collection_name].delete_many({"username": username})
+        # Delete chat history
+        chat_history_collection = MONGO_CLIENT['Documents'][collection_name]['chat_history']
+        chat_history_collection.drop()
+ 
     return "User deleted successfully."
 
 # Create Gradio interfaces
